@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "./supabaseClient";
 import { Loader2, ShieldCheck, Ban, ShieldOff, Crown, User } from "lucide-react";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "./AuthContext";
 
 export default function UsersPage() {
   const { perfil: me } = useAuth();

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "./supabaseClient";
 import { Loader2, Download, BarChart3, Calendar, Car } from "lucide-react";
 import * as XLSX from "xlsx";
 

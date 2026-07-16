@@ -4,10 +4,10 @@ import {
   ClipboardList, RotateCcw, Plus, Printer, AlertTriangle,
   ChevronLeft, Loader2, Undo2, ShieldCheck,
 } from "lucide-react";
-import { supabase } from "../supabaseClient";
-import { compressImageToBlob, uploadBlob } from "../storageUtils";
-import SignedImage from "../components/SignedImage";
-import { useAuth } from "../AuthContext";
+import { supabase } from "./supabaseClient";
+import { compressImageToBlob, uploadBlob } from "./storageUtils";
+import SignedImage from "./SignedImage";
+import { useAuth } from "./AuthContext";
 
 const MOTORISTA_FIELDS = [
   { key: "nome", label: "Nome completo", type: "text" },
