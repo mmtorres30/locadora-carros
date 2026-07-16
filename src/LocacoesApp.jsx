@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Car, Camera, PenTool, Check, X, Trash2, FileText, User,
   ClipboardList, RotateCcw, Plus, Printer, AlertTriangle,
-  ChevronLeft, Loader2, Undo2, ShieldCheck,
+  ChevronLeft, Loader2, Undo2, ShieldCheck, Search, UserCheck,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import { compressImageToBlob, uploadBlob } from "./storageUtils";
 import SignedImage from "./SignedImage";
 import { useAuth } from "./AuthContext";
+import { onlyDigits } from "./ClientsPage";
 
 const MOTORISTA_FIELDS = [
   { key: "nome", label: "Nome completo", type: "text" },
@@ -42,6 +43,7 @@ function emptyDraft() {
   return {
     id: crypto.randomUUID(),
     status: "aberta",
+    clienteId: null,
     motorista: { nome: "", cpf: "", cpfDoc: "", rg: "", rgDoc: "", telefone: "", email: "", endereco: "", enderecoDoc: "", cnhDoc: "" },
     veiculo: { placa: "", marca: "", modelo: "", cor: "", ano: "" },
     retirada: { data: "", horario: "", km: "", fotoKm: "", fotoPlaca: "", fotoPainel: "", fotoRosto: "", assinatura: "", semAvarias: false, fotoAvarias: [] },
@@ -210,6 +212,62 @@ function SignaturePad({ value, onChange, locId }) {
   );
 }
 
+function BuscaCliente({ onSelect }) {
+  const [termo, setTermo] = useState("");
+  const [resultados, setResultados] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+  const [aberto, setAberto] = useState(false);
+
+  useEffect(() => {
+    if (termo.trim().length < 2) { setResultados([]); return; }
+    setBuscando(true);
+    const t = setTimeout(async () => {
+      const q = termo.trim();
+      const digits = onlyDigits(q);
+      const { data } = await supabase
+        .from("clientes")
+        .select("*")
+        .or(digits.length >= 3 ? `cpf.ilike.%${digits}%` : `nome.ilike.%${q}%`)
+        .limit(8);
+      setResultados(data || []);
+      setBuscando(false);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [termo]);
+
+  return (
+    <div className="crs-field" style={{ position: "relative" }}>
+      <label>Buscar cliente já cadastrado (por nome ou CPF)</label>
+      <div style={{ position: "relative" }}>
+        <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />
+        <input
+          type="text" placeholder="Digite o nome ou CPF..." style={{ paddingLeft: 36 }}
+          value={termo}
+          onChange={(e) => { setTermo(e.target.value); setAberto(true); }}
+          onFocus={() => setAberto(true)}
+        />
+        {buscando && <Loader2 size={14} className="spin" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />}
+      </div>
+      {aberto && resultados.length > 0 && (
+        <div className="crs-search-results">
+          {resultados.map((c) => (
+            <button
+              key={c.id} type="button" className="crs-search-item"
+              onClick={() => { onSelect(c); setTermo(""); setResultados([]); setAberto(false); }}
+            >
+              <UserCheck size={14} />
+              <div>
+                <div style={{ fontWeight: 600 }}>{c.nome}</div>
+                <div className="crs-mono" style={{ fontSize: 11, color: "var(--muted)" }}>CPF {c.cpf}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LocacoesApp() {
   const { session, perfil } = useAuth();
   const [view, setView] = useState("home");
@@ -234,7 +292,7 @@ export default function LocacoesApp() {
   async function loadRecord(id) {
     const { data, error } = await supabase.from("locacoes").select("*").eq("id", id).single();
     if (error || !data) return null;
-    return { id: data.id, status: data.status, motorista: data.motorista, veiculo: data.veiculo, retirada: data.retirada, devolucao: data.devolucao };
+    return { id: data.id, status: data.status, clienteId: data.cliente_id, motorista: data.motorista, veiculo: data.veiculo, retirada: data.retirada, devolucao: data.devolucao };
   }
 
   function iniciarNovaLocacao() {
@@ -253,9 +311,22 @@ export default function LocacoesApp() {
     const all = [...validateGroup(draft.retirada, CHECK_FIELDS), ...validateGroup(draft.retirada, [], extra)];
     if (all.length) { setMissing(all.map((m) => m.label)); setMissingKeys(new Set(all.map((m) => m.key))); return; }
     setSaving(true);
+
+    // grava/atualiza o cliente (fica disponível pra busca nas próximas locações)
+    const cpfDigits = onlyDigits(draft.motorista.cpf);
+    const clientePayload = { ...draft.motorista, cpf: cpfDigits };
+    if (draft.clienteId) clientePayload.id = draft.clienteId;
+    const { data: clienteRow, error: clienteErr } = await supabase
+      .from("clientes")
+      .upsert(clientePayload, { onConflict: "cpf" })
+      .select()
+      .single();
+    if (clienteErr) { setSaving(false); setNotice("Erro ao salvar cliente: " + clienteErr.message); return; }
+
     const { error } = await supabase.from("locacoes").upsert({
       id: draft.id, status: "aberta", motorista: draft.motorista, veiculo: draft.veiculo,
       retirada: draft.retirada, devolucao: draft.devolucao, criado_por: session?.user?.id,
+      cliente_id: clienteRow.id,
     });
     setSaving(false);
     if (error) { setNotice("Erro ao salvar: " + error.message); return; }
@@ -355,6 +426,23 @@ export default function LocacoesApp() {
             <div className="crs-section">
               <div className="crs-section-head"><User size={16} /> Dados do motorista</div>
               <div className="crs-section-body">
+                <BuscaCliente onSelect={(c) => {
+                  setDraft((d) => ({
+                    ...d,
+                    clienteId: c.id,
+                    motorista: {
+                      nome: c.nome || "", cpf: c.cpf || "", cpfDoc: c.cpfDoc || "",
+                      rg: c.rg || "", rgDoc: c.rgDoc || "", telefone: c.telefone || "",
+                      email: c.email || "", endereco: c.endereco || "", enderecoDoc: c.enderecoDoc || "",
+                      cnhDoc: c.cnhDoc || "",
+                    },
+                  }));
+                }} />
+                {draft.clienteId && (
+                  <div className="crs-client-tag">
+                    <UserCheck size={13} /> Cliente já cadastrado selecionado — os campos abaixo foram preenchidos automaticamente.
+                  </div>
+                )}
                 {MOTORISTA_FIELDS.map((f) => f.type === "photo" ? (
                   <PhotoField key={f.key} label={f.label} value={draft.motorista[f.key]} onChange={(v) => setMotorista(f.key, v)} missing={missingKeys.has(f.key)} locId={draft.id} folder={f.key} />
                 ) : (
