@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { Car, Loader2, UserPlus } from "lucide-react";
-import { useAuth } from "./AuthContext";
+import { Car, Loader2, UserPlus, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "../AuthContext";
 
 export default function SignupPage({ onGoLogin }) {
   const { signUp } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(null);
@@ -61,7 +62,17 @@ export default function SignupPage({ onGoLogin }) {
           </div>
           <div className="crs-field">
             <label>Senha</label>
-            <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+            <div className="crs-pw-wrap">
+              <input
+                type={showPassword ? "text" : "password"}
+                required minLength={6} value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+              <button type="button" className="crs-pw-toggle" onClick={() => setShowPassword((s) => !s)} tabIndex={-1}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
           {err && <div className="crs-errbox">{err}</div>}
           <button className="crs-btn crs-btn-primary crs-btn-block" disabled={busy} type="submit">

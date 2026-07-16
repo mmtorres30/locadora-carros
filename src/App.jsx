@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Car, LogOut, ClipboardList, BarChart3, ShieldCheck, Crown } from "lucide-react";
 import { AuthProvider, useAuth } from "./AuthContext";
-import LoginPage from "./LoginPage";
-import SignupPage from "./SignupPage";
-import LocacoesApp from "./LocacoesApp";
-import ReportsPage from "./ReportsPage";
-import UsersPage from "./UsersPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import LocacoesApp from "./pages/LocacoesApp";
+import ReportsPage from "./pages/ReportsPage";
+import UsersPage from "./pages/UsersPage";
 
 /* ============================================================
    VIP DESIGN TOKENS
@@ -80,6 +80,11 @@ html,body,#root{ height:100%; margin:0; }
 }
 .crs-field input:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(198,161,91,.15); }
 .crs-field input.err{ border-color:var(--alert); background:var(--alert-bg); }
+
+.crs-pw-wrap{ position:relative; }
+.crs-pw-wrap input{ padding-right:42px; }
+.crs-pw-toggle{ position:absolute; top:50%; right:10px; transform:translateY(-50%); background:none; border:none; color:#96907E; cursor:pointer; padding:4px; display:flex; }
+.crs-pw-toggle:hover{ color:var(--gold); }
 
 .crs-photo-btn{
   display:flex; align-items:center; justify-content:center; gap:8px;
