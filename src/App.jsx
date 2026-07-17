@@ -15,9 +15,14 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 
 *{ box-sizing:border-box; }
-html,body,#root{ height:100%; margin:0; }
+html,body,#root{ height:100%; margin:0; overscroll-behavior:none; }
 
 .crs-app{
+  height:100vh;
+  height:100dvh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
   --noir:#16151A;
   --noir-2:#211F26;
   --paper:#FAF8F3;
@@ -36,7 +41,6 @@ html,body,#root{ height:100%; margin:0; }
   font-family:'Inter',sans-serif;
   color:var(--ink);
   background:var(--paper);
-  min-height:100vh;
   width:100%;
 }
 .crs-display{ font-family:'Space Grotesk',sans-serif; letter-spacing:.01em; }
@@ -45,7 +49,7 @@ html,body,#root{ height:100%; margin:0; }
 .crs-topbar{
   background:var(--noir); color:var(--paper); padding:14px 20px;
   display:flex; align-items:center; justify-content:space-between; gap:12px;
-  position:sticky; top:0; z-index:20; border-bottom:1px solid #2A2820;
+  border-bottom:1px solid #2A2820; flex-shrink:0;
 }
 .crs-topbar-left{ display:flex; align-items:center; gap:10px; }
 .crs-brand{ display:flex; align-items:center; gap:9px; }
@@ -68,7 +72,11 @@ html,body,#root{ height:100%; margin:0; }
 .crs-logout{ background:transparent; border:1px solid #35332B; color:#C9C4B6; border-radius:999px; padding:7px 9px; cursor:pointer; transition:all .15s ease; }
 .crs-logout:hover{ color:#fff; border-color:var(--gold); }
 
-.crs-steps{ display:flex; gap:6px; padding:10px 20px; background:var(--paper-2); border-bottom:1px solid var(--line); overflow-x:auto; }
+.crs-scroll-area{
+  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+}
+
+.crs-steps{ display:flex; gap:6px; padding:10px 20px; background:var(--paper-2); border-bottom:1px solid var(--line); overflow-x:auto; flex-shrink:0; }
 .crs-step{ font-size:11px; padding:5px 12px; border-radius:999px; white-space:nowrap; background:#fff; border:1px solid var(--line); color:var(--muted); font-weight:600; }
 .crs-step.active{ background:var(--noir); color:var(--gold-soft); border-color:var(--noir); }
 .crs-step.done{ background:var(--ok); color:#fff; border-color:var(--ok); }
@@ -182,7 +190,7 @@ html,body,#root{ height:100%; margin:0; }
 .crs-table td{ padding:11px 16px; border-bottom:1px solid var(--line); }
 .crs-table tr:last-child td{ border-bottom:none; }
 
-.crs-auth-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at top, #211F26, var(--noir) 65%); padding:24px; }
+.crs-auth-wrap{ min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at top, #211F26, var(--noir) 65%); padding:24px; overflow-y:auto; overscroll-behavior:contain; }
 .crs-auth-card{ background:#fff; border-radius:20px; padding:38px 32px; width:100%; max-width:400px; box-shadow:0 24px 60px rgba(0,0,0,.4); }
 .crs-auth-brand{ display:flex; align-items:center; gap:8px; color:var(--gold); font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:18px; }
 .crs-auth-title{ font-size:26px; margin:0 0 6px; }
@@ -263,17 +271,19 @@ function Shell() {
         </div>
       </div>
 
-      <div className="no-print" style={{ display: "flex", gap: 6, padding: "10px 14px", overflowX: "auto", background: "#1B1A1E" }}>
+      <div className="no-print" style={{ display: "flex", gap: 6, padding: "10px 14px", overflowX: "auto", background: "#1B1A1E", flexShrink: 0 }}>
         <button style={navMobileStyle(page === "locacoes")} onClick={() => setPage("locacoes")}>Locações</button>
         <button style={navMobileStyle(page === "clientes")} onClick={() => setPage("clientes")}>Clientes</button>
         {isAdmin && <button style={navMobileStyle(page === "relatorios")} onClick={() => setPage("relatorios")}>Relatórios</button>}
         {isAdmin && <button style={navMobileStyle(page === "usuarios")} onClick={() => setPage("usuarios")}>Usuários</button>}
       </div>
 
-      {page === "locacoes" && <LocacoesApp />}
-      {page === "clientes" && <ClientsPage />}
-      {page === "relatorios" && isAdmin && <ReportsPage />}
-      {page === "usuarios" && isAdmin && <UsersPage />}
+      <div className="crs-scroll-area">
+        {page === "locacoes" && <LocacoesApp />}
+        {page === "clientes" && <ClientsPage />}
+        {page === "relatorios" && isAdmin && <ReportsPage />}
+        {page === "usuarios" && isAdmin && <UsersPage />}
+      </div>
     </div>
   );
 }
