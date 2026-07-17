@@ -8,9 +8,7 @@ import { Users, Plus, Search, Loader2, Camera, X, Trash2, Pencil, ChevronLeft, A
 const CLIENT_FIELDS = [
   { key: "nome", label: "Nome completo", type: "text" },
   { key: "cpf", label: "CPF", type: "text" },
-  { key: "cpfDoc", label: "Foto do documento (CPF)", type: "photo" },
   { key: "rg", label: "RG", type: "text" },
-  { key: "rgDoc", label: "Foto do documento (RG)", type: "photo" },
   { key: "telefone", label: "Telefone", type: "tel" },
   { key: "email", label: "E-mail", type: "email" },
   { key: "endereco", label: "Endereço", type: "text" },
@@ -23,7 +21,7 @@ export function onlyDigits(v) {
 }
 
 function emptyClient() {
-  return { id: null, nome: "", cpf: "", cpfDoc: "", rg: "", rgDoc: "", telefone: "", email: "", endereco: "", enderecoDoc: "", cnhDoc: "" };
+  return { id: null, nome: "", cpf: "", rg: "", telefone: "", email: "", endereco: "", enderecoDoc: "", cnhDoc: "" };
 }
 
 function Field({ f, value, onChange, missingKeys }) {
@@ -109,7 +107,7 @@ export default function ClientsPage() {
   }
 
   async function salvar() {
-    const required = CLIENT_FIELDS.filter((f) => f.key !== "email" && f.key !== "rg" && f.key !== "rgDoc");
+    const required = CLIENT_FIELDS.filter((f) => f.key !== "email" && f.key !== "rg");
     const missingList = required.filter((f) => !draft[f.key] || String(draft[f.key]).trim() === "");
     if (missingList.length) {
       setMissing(missingList.map((m) => m.label));

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
-import { Loader2, ShieldCheck, Ban, ShieldOff, Crown, User } from "lucide-react";
+import { Loader2, ShieldCheck, Ban, ShieldOff } from "lucide-react";
 import { useAuth } from "./AuthContext";
 
 export default function UsersPage() {
@@ -53,9 +53,15 @@ export default function UsersPage() {
                     <td>{r.nome || "-"}</td>
                     <td className="crs-mono" style={{ fontSize: 11.5 }}>{r.email}</td>
                     <td>
-                      <span className={`crs-badge ${r.role === "admin" ? "fechada" : "aberta"}`}>
-                        {r.role === "admin" ? "Admin" : "Operador"}
-                      </span>
+                      <select
+                        className="crs-role-select"
+                        value={r.role}
+                        disabled={busyId === r.id || r.id === me?.id}
+                        onChange={(e) => setRole(r.id, e.target.value)}
+                      >
+                        <option value="operador">Operador</option>
+                        <option value="admin">Admin</option>
+                      </select>
                     </td>
                     <td>
                       <span className={`crs-badge ${r.status === "ativo" ? "fechada" : "bloqueado"}`}>
@@ -77,15 +83,6 @@ export default function UsersPage() {
                           ) : (
                             <button className="crs-btn crs-btn-ok" disabled={busyId === r.id} onClick={() => setStatus(r.id, "ativo")}>
                               <ShieldOff size={13} /> Ativar
-                            </button>
-                          )}
-                          {r.role === "admin" ? (
-                            <button className="crs-btn crs-btn-outline" disabled={busyId === r.id} onClick={() => setRole(r.id, "operador")}>
-                              <User size={13} /> Tornar operador
-                            </button>
-                          ) : (
-                            <button className="crs-btn crs-btn-outline" disabled={busyId === r.id} onClick={() => setRole(r.id, "admin")}>
-                              <Crown size={13} /> Tornar admin
                             </button>
                           )}
                         </>

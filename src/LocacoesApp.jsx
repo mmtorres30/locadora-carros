@@ -13,9 +13,7 @@ import { onlyDigits } from "./ClientsPage";
 const MOTORISTA_FIELDS = [
   { key: "nome", label: "Nome completo", type: "text" },
   { key: "cpf", label: "CPF", type: "text" },
-  { key: "cpfDoc", label: "Foto do documento (CPF)", type: "photo" },
   { key: "rg", label: "RG", type: "text" },
-  { key: "rgDoc", label: "Foto do documento (RG)", type: "photo" },
   { key: "telefone", label: "Telefone", type: "tel" },
   { key: "email", label: "E-mail", type: "email" },
   { key: "endereco", label: "Endereço", type: "text" },
@@ -44,7 +42,7 @@ function emptyDraft() {
     id: crypto.randomUUID(),
     status: "aberta",
     clienteId: null,
-    motorista: { nome: "", cpf: "", cpfDoc: "", rg: "", rgDoc: "", telefone: "", email: "", endereco: "", enderecoDoc: "", cnhDoc: "" },
+    motorista: { nome: "", cpf: "", rg: "", telefone: "", email: "", endereco: "", enderecoDoc: "", cnhDoc: "" },
     veiculo: { placa: "", marca: "", modelo: "", cor: "", ano: "" },
     retirada: { data: "", horario: "", km: "", fotoKm: "", fotoPlaca: "", fotoPainel: "", fotoRosto: "", assinatura: "", semAvarias: false, fotoAvarias: [] },
     devolucao: { data: "", horario: "", km: "", fotoKm: "", fotoPlaca: "", fotoPainel: "", fotoRosto: "", assinatura: "", semAvarias: false, fotoAvarias: [] },
@@ -431,8 +429,8 @@ export default function LocacoesApp() {
                     ...d,
                     clienteId: c.id,
                     motorista: {
-                      nome: c.nome || "", cpf: c.cpf || "", cpfDoc: c.cpfDoc || "",
-                      rg: c.rg || "", rgDoc: c.rgDoc || "", telefone: c.telefone || "",
+                      nome: c.nome || "", cpf: c.cpf || "",
+                      rg: c.rg || "", telefone: c.telefone || "",
                       email: c.email || "", endereco: c.endereco || "", enderecoDoc: c.enderecoDoc || "",
                       cnhDoc: c.cnhDoc || "",
                     },
@@ -518,8 +516,6 @@ function ContractView({ record, onBack }) {
         <div className="kv"><b>E-mail</b>{m.email}</div><div className="kv"><b>Endereço</b>{m.endereco}</div>
       </div>
       <div className="photos">
-        {m.cpfDoc && <SignedImage path={m.cpfDoc} alt="CPF" />}
-        {m.rgDoc && <SignedImage path={m.rgDoc} alt="RG" />}
         {m.enderecoDoc && <SignedImage path={m.enderecoDoc} alt="Comprovante endereço" />}
         {m.cnhDoc && <SignedImage path={m.cnhDoc} alt="CNH" />}
       </div>

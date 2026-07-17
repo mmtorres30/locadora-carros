@@ -89,6 +89,13 @@ html,body,#root{ height:100%; margin:0; }
 .crs-field input:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(198,161,91,.15); }
 .crs-field input.err{ border-color:var(--alert); background:var(--alert-bg); }
 
+.crs-role-select{
+  border:1.5px solid var(--line); border-radius:8px; padding:7px 10px; font-size:12.5px; font-weight:600;
+  font-family:inherit; background:var(--paper); color:var(--ink); cursor:pointer;
+}
+.crs-role-select:disabled{ opacity:.6; cursor:not-allowed; }
+.crs-role-select:focus{ outline:none; border-color:var(--gold); }
+
 .crs-pw-wrap{ position:relative; }
 .crs-pw-wrap input{ padding-right:42px; }
 .crs-pw-toggle{ position:absolute; top:50%; right:10px; transform:translateY(-50%); background:none; border:none; color:var(--muted); cursor:pointer; padding:4px; display:flex; }
