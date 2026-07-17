@@ -31,9 +31,8 @@ const CHECK_FIELDS = [
   { key: "data", label: "Data", type: "date" },
   { key: "horario", label: "Horário", type: "time" },
   { key: "km", label: "Quilometragem (Km)", type: "text" },
-  { key: "fotoKm", label: "Foto do odômetro (Km)", type: "photo" },
   { key: "fotoPlaca", label: "Foto da placa", type: "photo" },
-  { key: "fotoPainel", label: "Foto do painel", type: "photo" },
+  { key: "fotoPainel", label: "Tire a foto do painel onde mostre a Km e o nível de combustível", type: "photo" },
   { key: "fotoRosto", label: "Foto de rosto do motorista", type: "photo", capture: "user" },
 ];
 
@@ -44,8 +43,8 @@ function emptyDraft() {
     clienteId: null,
     motorista: { nome: "", cpf: "", rg: "", telefone: "", email: "", endereco: "", enderecoDoc: "", cnhDoc: "" },
     veiculo: { placa: "", marca: "", modelo: "", cor: "", ano: "" },
-    retirada: { data: "", horario: "", km: "", fotoKm: "", fotoPlaca: "", fotoPainel: "", fotoRosto: "", assinatura: "", semAvarias: false, fotoAvarias: [] },
-    devolucao: { data: "", horario: "", km: "", fotoKm: "", fotoPlaca: "", fotoPainel: "", fotoRosto: "", assinatura: "", semAvarias: false, fotoAvarias: [] },
+    retirada: { data: "", horario: "", km: "", fotoPlaca: "", fotoPainel: "", fotoRosto: "", assinatura: "", semAvarias: false, fotoAvarias: [] },
+    devolucao: { data: "", horario: "", km: "", fotoPlaca: "", fotoPainel: "", fotoRosto: "", assinatura: "", semAvarias: false, fotoAvarias: [] },
   };
 }
 function validateGroup(obj, fields, extra = []) {
@@ -544,7 +543,6 @@ function CheckoutBlock({ title, g }) {
         <div className="kv"><b>Avarias</b>{g.semAvarias ? "Nenhuma registrada" : `${g.fotoAvarias.length} foto(s)`}</div>
       </div>
       <div className="photos">
-        {g.fotoKm && <SignedImage path={g.fotoKm} alt="Km" />}
         {g.fotoPlaca && <SignedImage path={g.fotoPlaca} alt="Placa" />}
         {g.fotoPainel && <SignedImage path={g.fotoPainel} alt="Painel" />}
         {g.fotoRosto && <SignedImage path={g.fotoRosto} alt="Rosto motorista" />}
