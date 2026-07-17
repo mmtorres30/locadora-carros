@@ -8,23 +8,23 @@ import { supabase } from "./supabaseClient";
 import { compressImageToBlob, uploadBlob } from "./storageUtils";
 import SignedImage from "./SignedImage";
 import { useAuth } from "./AuthContext";
-import { onlyDigits } from "./ClientsPage";
+import { onlyDigits, applyFormat, formatCPF, formatPhone } from "./formatters";
 
 const MOTORISTA_FIELDS = [
-  { key: "nome", label: "Nome completo", type: "text" },
-  { key: "cpf", label: "CPF", type: "text" },
-  { key: "rg", label: "RG", type: "text" },
-  { key: "telefone", label: "Telefone", type: "tel" },
+  { key: "nome", label: "Nome completo", type: "text", format: "title" },
+  { key: "cpf", label: "CPF", type: "text", format: "cpf" },
+  { key: "rg", label: "RG", type: "text", format: "rg" },
+  { key: "telefone", label: "Telefone", type: "tel", format: "phone" },
   { key: "email", label: "E-mail", type: "email" },
-  { key: "endereco", label: "Endereço", type: "text" },
+  { key: "endereco", label: "Endereço", type: "text", format: "title" },
   { key: "enderecoDoc", label: "Foto do comprovante de endereço", type: "photo" },
   { key: "cnhDoc", label: "Foto da CNH", type: "photo" },
 ];
 const VEICULO_FIELDS = [
   { key: "placa", label: "Placa", type: "text" },
-  { key: "marca", label: "Marca", type: "text" },
-  { key: "modelo", label: "Modelo", type: "text" },
-  { key: "cor", label: "Cor", type: "text" },
+  { key: "marca", label: "Marca", type: "text", format: "title" },
+  { key: "modelo", label: "Modelo", type: "text", format: "title" },
+  { key: "cor", label: "Cor", type: "text", format: "title" },
   { key: "ano", label: "Ano", type: "text" },
 ];
 const CHECK_FIELDS = [
@@ -34,7 +34,7 @@ const CHECK_FIELDS = [
   { key: "fotoKm", label: "Foto do odômetro (Km)", type: "photo" },
   { key: "fotoPlaca", label: "Foto da placa", type: "photo" },
   { key: "fotoPainel", label: "Foto do painel", type: "photo" },
-  { key: "fotoRosto", label: "Foto de rosto do motorista", type: "photo" },
+  { key: "fotoRosto", label: "Foto de rosto do motorista", type: "photo", capture: "user" },
 ];
 
 function emptyDraft() {
@@ -60,12 +60,15 @@ function Field({ f, value, onChange, missingKeys }) {
   return (
     <div className="crs-field">
       <label>{f.label}<span className="req">*</span></label>
-      <input type={f.type} className={isErr ? "err" : ""} value={value || ""} onChange={(e) => onChange(f.key, e.target.value)} />
+      <input
+        type={f.type} className={isErr ? "err" : ""} value={value || ""}
+        onChange={(e) => onChange(f.key, applyFormat(f.format, e.target.value))}
+      />
     </div>
   );
 }
 
-function PhotoField({ label, required = true, value, onChange, missing, locId, folder }) {
+function PhotoField({ label, required = true, value, onChange, missing, locId, folder, capture = "environment" }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const handleFile = async (e) => {
@@ -91,8 +94,8 @@ function PhotoField({ label, required = true, value, onChange, missing, locId, f
       ) : (
         <label className={`crs-photo-btn ${missing ? "err" : ""}`}>
           {busy ? <Loader2 size={16} className="spin" /> : <Camera size={16} />}
-          {busy ? "Enviando..." : "Tirar foto / escolher arquivo"}
-          <input type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
+          {busy ? "Enviando..." : capture === "user" ? "Tirar foto agora" : "Tirar foto / escolher arquivo"}
+          <input type="file" accept="image/*" capture={capture} onChange={handleFile} style={{ display: "none" }} />
         </label>
       )}
       {err && <div style={{ color: "var(--alert)", fontSize: 11, marginTop: 4 }}>{err}</div>}
@@ -212,51 +215,49 @@ function SignaturePad({ value, onChange, locId }) {
 
 function BuscaCliente({ onSelect }) {
   const [termo, setTermo] = useState("");
-  const [resultados, setResultados] = useState([]);
-  const [buscando, setBuscando] = useState(false);
+  const [todos, setTodos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
   const [aberto, setAberto] = useState(false);
 
   useEffect(() => {
-    if (termo.trim().length < 2) { setResultados([]); return; }
-    setBuscando(true);
-    const t = setTimeout(async () => {
-      const q = termo.trim();
-      const digits = onlyDigits(q);
-      const { data } = await supabase
-        .from("clientes")
-        .select("*")
-        .or(digits.length >= 3 ? `cpf.ilike.%${digits}%` : `nome.ilike.%${q}%`)
-        .limit(8);
-      setResultados(data || []);
-      setBuscando(false);
-    }, 350);
-    return () => clearTimeout(t);
-  }, [termo]);
+    (async () => {
+      const { data } = await supabase.from("clientes").select("*").order("nome", { ascending: true }).limit(500);
+      setTodos(data || []);
+      setCarregando(false);
+    })();
+  }, []);
+
+  const q = termo.trim().toLowerCase();
+  const digits = onlyDigits(termo);
+  const resultados = q
+    ? todos.filter((c) => (c.nome || "").toLowerCase().includes(q) || (digits.length >= 2 && onlyDigits(c.cpf).includes(digits)))
+    : todos;
 
   return (
     <div className="crs-field" style={{ position: "relative" }}>
-      <label>Buscar cliente já cadastrado (por nome ou CPF)</label>
+      <label>Buscar cliente já cadastrado (ou veja todos abaixo)</label>
       <div style={{ position: "relative" }}>
         <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />
         <input
-          type="text" placeholder="Digite o nome ou CPF..." style={{ paddingLeft: 36 }}
+          type="text" placeholder="Digite o nome ou CPF, ou clique para ver todos..." style={{ paddingLeft: 36 }}
           value={termo}
           onChange={(e) => { setTermo(e.target.value); setAberto(true); }}
           onFocus={() => setAberto(true)}
+          onBlur={() => setTimeout(() => setAberto(false), 150)}
         />
-        {buscando && <Loader2 size={14} className="spin" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />}
+        {carregando && <Loader2 size={14} className="spin" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />}
       </div>
       {aberto && resultados.length > 0 && (
-        <div className="crs-search-results">
+        <div className="crs-search-results" style={{ maxHeight: 260, overflowY: "auto" }}>
           {resultados.map((c) => (
             <button
               key={c.id} type="button" className="crs-search-item"
-              onClick={() => { onSelect(c); setTermo(""); setResultados([]); setAberto(false); }}
+              onMouseDown={() => { onSelect(c); setTermo(""); setAberto(false); }}
             >
               <UserCheck size={14} />
               <div>
                 <div style={{ fontWeight: 600 }}>{c.nome}</div>
-                <div className="crs-mono" style={{ fontSize: 11, color: "var(--muted)" }}>CPF {c.cpf}</div>
+                <div className="crs-mono" style={{ fontSize: 11, color: "var(--muted)" }}>CPF {formatCPF(c.cpf)}</div>
               </div>
             </button>
           ))}
@@ -429,8 +430,8 @@ export default function LocacoesApp() {
                     ...d,
                     clienteId: c.id,
                     motorista: {
-                      nome: c.nome || "", cpf: c.cpf || "",
-                      rg: c.rg || "", telefone: c.telefone || "",
+                      nome: c.nome || "", cpf: formatCPF(c.cpf) || "",
+                      rg: c.rg || "", telefone: formatPhone(c.telefone) || "",
                       email: c.email || "", endereco: c.endereco || "", enderecoDoc: c.enderecoDoc || "",
                       cnhDoc: c.cnhDoc || "",
                     },
@@ -472,7 +473,7 @@ export default function LocacoesApp() {
                 <div className="crs-section-body">
                   {CHECK_FIELDS.filter((f) => f.type !== "photo").map((f) => <Field key={f.key} f={f} value={group[f.key]} onChange={setGroup} missingKeys={missingKeys} />)}
                   {CHECK_FIELDS.filter((f) => f.type === "photo").map((f) => (
-                    <PhotoField key={f.key} label={f.label} value={group[f.key]} onChange={(v) => setGroup(f.key, v)} missing={missingKeys.has(f.key)} locId={draft.id} folder={`${groupKey}-${f.key}`} />
+                    <PhotoField key={f.key} label={f.label} value={group[f.key]} onChange={(v) => setGroup(f.key, v)} missing={missingKeys.has(f.key)} locId={draft.id} folder={`${groupKey}-${f.key}`} capture={f.capture || "environment"} />
                   ))}
                   <AvariasField group={group} onChangeGroup={onChangeGroup} missing={missingKeys.has("fotoAvarias")} locId={draft.id} />
                 </div>

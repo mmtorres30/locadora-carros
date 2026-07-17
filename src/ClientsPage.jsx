@@ -3,22 +3,19 @@ import { supabase } from "./supabaseClient";
 import { compressImageToBlob, uploadBlob } from "./storageUtils";
 import SignedImage from "./SignedImage";
 import { useAuth } from "./AuthContext";
+import { onlyDigits, applyFormat, formatCPF, formatPhone } from "./formatters";
 import { Users, Plus, Search, Loader2, Camera, X, Trash2, Pencil, ChevronLeft, AlertTriangle } from "lucide-react";
 
 const CLIENT_FIELDS = [
-  { key: "nome", label: "Nome completo", type: "text" },
-  { key: "cpf", label: "CPF", type: "text" },
-  { key: "rg", label: "RG", type: "text" },
-  { key: "telefone", label: "Telefone", type: "tel" },
+  { key: "nome", label: "Nome completo", type: "text", format: "title" },
+  { key: "cpf", label: "CPF", type: "text", format: "cpf" },
+  { key: "rg", label: "RG", type: "text", format: "rg" },
+  { key: "telefone", label: "Telefone", type: "tel", format: "phone" },
   { key: "email", label: "E-mail", type: "email" },
-  { key: "endereco", label: "Endereço", type: "text" },
+  { key: "endereco", label: "Endereço", type: "text", format: "title" },
   { key: "enderecoDoc", label: "Foto do comprovante de endereço", type: "photo" },
   { key: "cnhDoc", label: "Foto da CNH", type: "photo" },
 ];
-
-export function onlyDigits(v) {
-  return (v || "").replace(/\D/g, "");
-}
 
 function emptyClient() {
   return { id: null, nome: "", cpf: "", rg: "", telefone: "", email: "", endereco: "", enderecoDoc: "", cnhDoc: "" };
@@ -29,7 +26,10 @@ function Field({ f, value, onChange, missingKeys }) {
   return (
     <div className="crs-field">
       <label>{f.label}{f.key !== "email" && f.key !== "rg" && <span className="req">*</span>}</label>
-      <input type={f.type} className={isErr ? "err" : ""} value={value || ""} onChange={(e) => onChange(f.key, e.target.value)} />
+      <input
+        type={f.type} className={isErr ? "err" : ""} value={value || ""}
+        onChange={(e) => onChange(f.key, applyFormat(f.format, e.target.value))}
+      />
     </div>
   );
 }
@@ -101,7 +101,7 @@ export default function ClientsPage() {
     setView("form");
   }
   function editarCliente(c) {
-    setDraft({ ...c });
+    setDraft({ ...c, cpf: formatCPF(c.cpf), telefone: formatPhone(c.telefone) });
     setMissing([]); setMissingKeys(new Set());
     setView("form");
   }
@@ -192,7 +192,7 @@ export default function ClientsPage() {
               <div className="crs-ticket-row">
                 <div>
                   <div className="crs-ticket-name">{c.nome}</div>
-                  <div className="crs-ticket-meta crs-mono">CPF {c.cpf} · {c.telefone || "sem telefone"}</div>
+                  <div className="crs-ticket-meta crs-mono">CPF {formatCPF(c.cpf)} · {c.telefone ? formatPhone(c.telefone) : "sem telefone"}</div>
                 </div>
               </div>
             </div>
