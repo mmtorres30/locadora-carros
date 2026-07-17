@@ -45,5 +45,26 @@ export function applyFormat(format, value) {
   if (format === "cpf") return formatCPF(value);
   if (format === "rg") return formatRG(value);
   if (format === "phone") return formatPhone(value);
+  if (format === "upper") return (value || "").toUpperCase();
   return value;
+}
+
+export function isValidCPF(v) {
+  const d = onlyDigits(v);
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
+  let check1 = (sum * 10) % 11;
+  if (check1 === 10) check1 = 0;
+  if (check1 !== parseInt(d[9])) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
+  let check2 = (sum * 10) % 11;
+  if (check2 === 10) check2 = 0;
+  return check2 === parseInt(d[10]);
+}
+
+export function rgIncompleto(v) {
+  const raw = (v || "").replace(/[^0-9A-Za-z]/g, "");
+  return raw.length > 0 && raw.length < 7;
 }

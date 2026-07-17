@@ -7,6 +7,8 @@ import LocacoesApp from "./LocacoesApp";
 import ReportsPage from "./ReportsPage";
 import UsersPage from "./UsersPage";
 import ClientsPage from "./ClientsPage";
+import VehiclesPage from "./VehiclesPage";
+import ResetPasswordPage from "./ResetPasswordPage";
 
 /* ============================================================
    VIP DESIGN TOKENS
@@ -206,7 +208,7 @@ html,body,#root{ height:100%; margin:0; overscroll-behavior:none; }
 `;
 
 function Shell() {
-  const { session, perfil, loading, signOut } = useAuth();
+  const { session, perfil, loading, recovery, signOut } = useAuth();
   const [authView, setAuthView] = useState("login");
   const [page, setPage] = useState("locacoes");
 
@@ -215,6 +217,15 @@ function Shell() {
       <div className="crs-app">
         <style>{CSS}</style>
         <div className="crs-empty" style={{ paddingTop: 120 }}>Carregando…</div>
+      </div>
+    );
+  }
+
+  if (session && recovery) {
+    return (
+      <div className="crs-app">
+        <style>{CSS}</style>
+        <ResetPasswordPage />
       </div>
     );
   }
@@ -258,6 +269,7 @@ function Shell() {
           <nav className="crs-nav">
             <button className={page === "locacoes" ? "active" : ""} onClick={() => setPage("locacoes")}><ClipboardList size={14} /> Locações</button>
             <button className={page === "clientes" ? "active" : ""} onClick={() => setPage("clientes")}><Users size={14} /> Clientes</button>
+            <button className={page === "veiculos" ? "active" : ""} onClick={() => setPage("veiculos")}><Car size={14} /> Veículos</button>
             {isAdmin && <button className={page === "relatorios" ? "active" : ""} onClick={() => setPage("relatorios")}><BarChart3 size={14} /> Relatórios</button>}
             {isAdmin && <button className={page === "usuarios" ? "active" : ""} onClick={() => setPage("usuarios")}><ShieldCheck size={14} /> Usuários</button>}
           </nav>
@@ -274,6 +286,7 @@ function Shell() {
       <div className="no-print" style={{ display: "flex", gap: 6, padding: "10px 14px", overflowX: "auto", background: "#1B1A1E", flexShrink: 0 }}>
         <button style={navMobileStyle(page === "locacoes")} onClick={() => setPage("locacoes")}>Locações</button>
         <button style={navMobileStyle(page === "clientes")} onClick={() => setPage("clientes")}>Clientes</button>
+        <button style={navMobileStyle(page === "veiculos")} onClick={() => setPage("veiculos")}>Veículos</button>
         {isAdmin && <button style={navMobileStyle(page === "relatorios")} onClick={() => setPage("relatorios")}>Relatórios</button>}
         {isAdmin && <button style={navMobileStyle(page === "usuarios")} onClick={() => setPage("usuarios")}>Usuários</button>}
       </div>
@@ -281,6 +294,7 @@ function Shell() {
       <div className="crs-scroll-area">
         {page === "locacoes" && <LocacoesApp />}
         {page === "clientes" && <ClientsPage />}
+        {page === "veiculos" && <VehiclesPage />}
         {page === "relatorios" && isAdmin && <ReportsPage />}
         {page === "usuarios" && isAdmin && <UsersPage />}
       </div>

@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import { compressImageToBlob, uploadBlob } from "./storageUtils";
 import SignedImage from "./SignedImage";
 import { useAuth } from "./AuthContext";
-import { onlyDigits, applyFormat, formatCPF, formatPhone } from "./formatters";
+import { onlyDigits, applyFormat, formatCPF, formatPhone, isValidCPF, rgIncompleto } from "./formatters";
 import { Users, Plus, Search, Loader2, Camera, X, Trash2, Pencil, ChevronLeft, AlertTriangle } from "lucide-react";
 
 const CLIENT_FIELDS = [
@@ -23,13 +23,17 @@ function emptyClient() {
 
 function Field({ f, value, onChange, missingKeys }) {
   const isErr = missingKeys.has(f.key);
+  const cpfInvalido = f.format === "cpf" && onlyDigits(value).length === 11 && !isValidCPF(value);
+  const rgIncompletoMsg = f.format === "rg" && rgIncompleto(value);
   return (
     <div className="crs-field">
       <label>{f.label}{f.key !== "email" && f.key !== "rg" && <span className="req">*</span>}</label>
       <input
-        type={f.type} className={isErr ? "err" : ""} value={value || ""}
+        type={f.type} className={isErr || cpfInvalido ? "err" : ""} value={value || ""}
         onChange={(e) => onChange(f.key, applyFormat(f.format, e.target.value))}
       />
+      {cpfInvalido && <div style={{ color: "var(--alert)", fontSize: 11, marginTop: 4 }}>CPF inválido — confira os números.</div>}
+      {rgIncompletoMsg && <div style={{ color: "var(--muted)", fontSize: 11, marginTop: 4 }}>RG parece incompleto.</div>}
     </div>
   );
 }
@@ -112,6 +116,11 @@ export default function ClientsPage() {
     if (missingList.length) {
       setMissing(missingList.map((m) => m.label));
       setMissingKeys(new Set(missingList.map((m) => m.key)));
+      return;
+    }
+    if (!isValidCPF(draft.cpf)) {
+      setMissing(["CPF inválido — confira os números"]);
+      setMissingKeys(new Set(["cpf"]));
       return;
     }
     setSaving(true);

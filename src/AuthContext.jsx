@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recovery, setRecovery] = useState(false);
 
   async function loadPerfil(userId) {
     const { data } = await supabase.from("perfis").select("*").eq("id", userId).single();
@@ -20,7 +21,8 @@ export function AuthProvider({ children }) {
       if (data.session) await loadPerfil(data.session.user.id);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
       setSession(s);
       if (s) await loadPerfil(s.user.id);
       else setPerfil(null);
@@ -68,10 +70,29 @@ export function AuthProvider({ children }) {
   async function signOut() {
     await supabase.auth.signOut();
     setPerfil(null);
+    setRecovery(false);
+  }
+
+  async function resetPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) return { error: error.message };
+    return { error: null };
+  }
+
+  async function updatePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { error: error.message };
+    setRecovery(false);
+    return { error: null };
   }
 
   return (
-    <AuthCtx.Provider value={{ session, perfil, loading, signIn, signUp, signOut, reloadPerfil: () => session && loadPerfil(session.user.id) }}>
+    <AuthCtx.Provider value={{
+      session, perfil, loading, recovery, signIn, signUp, signOut, resetPassword, updatePassword,
+      reloadPerfil: () => session && loadPerfil(session.user.id),
+    }}>
       {children}
     </AuthCtx.Provider>
   );
