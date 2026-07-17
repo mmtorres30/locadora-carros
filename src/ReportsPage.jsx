@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabaseClient";
-import { Loader2, Download, BarChart3, Calendar, Car } from "lucide-react";
+import { Loader2, Download, BarChart3, Calendar, Car, User } from "lucide-react";
+import { formatCPF } from "./formatters";
 import * as XLSX from "xlsx";
 
 function diffDias(dataIni, dataFim) {
@@ -99,7 +100,7 @@ export default function ReportsPage() {
     XLSX.utils.book_append_sheet(wb, wsPlaca, "Por placa");
 
     const wsDet = XLSX.utils.json_to_sheet(filtradas.map((r) => ({
-      Motorista: r.motorista?.nome, Placa: r.veiculo?.placa, Modelo: r.veiculo?.modelo,
+      Motorista: r.motorista?.nome, CPF: formatCPF(r.motorista?.cpf), Placa: r.veiculo?.placa, Modelo: r.veiculo?.modelo,
       "Data retirada": r.retirada?.data, "Data devolução": r.devolucao?.data || "",
       "Km retirada": r.retirada?.km || "", "Km devolução": r.devolucao?.km || "", "Km rodado": kmRodado(r),
       Status: r.status === "aberta" ? "Em andamento" : "Concluída",
@@ -154,6 +155,28 @@ export default function ReportsPage() {
                     <tr key={p.placa}>
                       <td className="crs-mono">{p.placa}</td><td>{p.modelo}</td><td>{p.total}</td>
                       <td>{p.abertas}</td><td>{p.fechadas}</td><td>{p.diasTotal}</td><td>{p.kmTotal || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="crs-section">
+            <div className="crs-section-head"><User size={16} /> Detalhado — quem alugou cada carro</div>
+            <div className="crs-section-body" style={{ padding: 0 }}>
+              <table className="crs-table">
+                <thead><tr><th>Motorista</th><th>CPF</th><th>Placa</th><th>Retirada</th><th>Devolução</th><th>Km rodado</th><th>Status</th></tr></thead>
+                <tbody>
+                  {filtradas.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#8a8578" }}>Sem dados no período.</td></tr>}
+                  {filtradas.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.motorista?.nome || "-"}</td>
+                      <td className="crs-mono">{formatCPF(r.motorista?.cpf)}</td>
+                      <td className="crs-mono">{r.veiculo?.placa || "-"}</td>
+                      <td className="crs-mono">{r.retirada?.data || "-"}</td>
+                      <td className="crs-mono">{r.devolucao?.data || "-"}</td>
+                      <td>{kmRodado(r) || "-"}</td>
+                      <td><span className={`crs-badge ${r.status}`}>{r.status === "aberta" ? "Em andamento" : "Concluída"}</span></td>
                     </tr>
                   ))}
                 </tbody>
