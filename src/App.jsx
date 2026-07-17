@@ -122,6 +122,14 @@ html,body,#root{ height:100%; margin:0; overscroll-behavior:none; }
 }
 .crs-search-item:last-child{ border-bottom:none; }
 .crs-search-item:hover{ background:var(--cyan-soft); color:var(--cyan); }
+
+.crs-camera-overlay{
+  position:fixed; inset:0; background:rgba(10,9,7,.92); z-index:100;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.crs-camera-box{ width:100%; max-width:480px; display:flex; flex-direction:column; gap:14px; }
+.crs-camera-video{ width:100%; border-radius:14px; background:#000; max-height:65vh; object-fit:cover; transform:scaleX(-1); }
+.crs-camera-actions{ display:flex; gap:10px; justify-content:center; }
 .crs-client-tag{
   display:flex; align-items:center; gap:8px; font-size:12px; color:var(--cyan); background:var(--cyan-soft);
   border:1px solid rgba(47,169,154,.25); border-radius:9px; padding:9px 12px;

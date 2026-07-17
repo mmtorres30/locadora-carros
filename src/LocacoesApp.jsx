@@ -72,9 +72,69 @@ function Field({ f, value, onChange, missingKeys }) {
   );
 }
 
+function CameraCapture({ onCapture, onClose, facingMode = "user" }) {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode }, audio: false })
+      .then((stream) => {
+        if (!active) { stream.getTracks().forEach((t) => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => setReady(true);
+        }
+      })
+      .catch(() => setError("Não foi possível acessar a câmera. Verifique se você permitiu o acesso nas configurações do navegador."));
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, [facingMode]);
+
+  function fechar() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    onClose();
+  }
+
+  function capturar() {
+    const video = videoRef.current;
+    if (!video) return;
+    const maxDim = 900;
+    let w = video.videoWidth, h = video.videoHeight;
+    if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+    else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d").drawImage(video, 0, 0, w, h);
+    canvas.toBlob((blob) => { if (blob) onCapture(blob); fechar(); }, "image/jpeg", 0.8);
+  }
+
+  return (
+    <div className="crs-camera-overlay">
+      <div className="crs-camera-box">
+        {error ? (
+          <div className="crs-errbox">{error}</div>
+        ) : (
+          <video ref={videoRef} autoPlay playsInline muted className="crs-camera-video" />
+        )}
+        <div className="crs-camera-actions">
+          <button className="crs-btn crs-btn-outline" onClick={fechar}><X size={14} /> Cancelar</button>
+          {!error && <button className="crs-btn crs-btn-primary" disabled={!ready} onClick={capturar}><Camera size={16} /> Capturar</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PhotoField({ label, required = true, value, onChange, missing, locId, folder, capture = "environment", dualOption = false }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -87,6 +147,14 @@ function PhotoField({ label, required = true, value, onChange, missing, locId, f
     setBusy(false);
     e.target.value = "";
   };
+  const handleCaptured = async (blob) => {
+    setBusy(true); setErr("");
+    try {
+      const path = await uploadBlob(locId, folder, blob, "jpg");
+      onChange(path);
+    } catch { setErr("Falha ao enviar a foto. Tente novamente."); }
+    setBusy(false);
+  };
   return (
     <div className="crs-field">
       <label>{label}{required && <span className="req">*</span>}</label>
@@ -97,11 +165,10 @@ function PhotoField({ label, required = true, value, onChange, missing, locId, f
         </div>
       ) : dualOption ? (
         <div style={{ display: "flex", gap: 10 }}>
-          <label className={`crs-photo-btn ${missing ? "err" : ""}`} style={{ flex: 1 }}>
+          <button type="button" className={`crs-photo-btn ${missing ? "err" : ""}`} style={{ flex: 1 }} onClick={() => setShowCamera(true)} disabled={busy}>
             {busy ? <Loader2 size={16} className="spin" /> : <Camera size={16} />}
             {busy ? "Enviando..." : "Tirar foto agora"}
-            <input type="file" accept="image/*" capture="user" onChange={handleFile} style={{ display: "none" }} />
-          </label>
+          </button>
           <label className={`crs-photo-btn ${missing ? "err" : ""}`} style={{ flex: 1 }}>
             <Image size={16} />
             Escolher da galeria
@@ -111,10 +178,11 @@ function PhotoField({ label, required = true, value, onChange, missing, locId, f
       ) : (
         <label className={`crs-photo-btn ${missing ? "err" : ""}`}>
           {busy ? <Loader2 size={16} className="spin" /> : <Camera size={16} />}
-          {busy ? "Enviando..." : capture === "user" ? "Tirar foto agora" : "Tirar foto / escolher arquivo"}
+          {busy ? "Enviando..." : "Tirar foto / escolher arquivo"}
           <input type="file" accept="image/*" capture={capture} onChange={handleFile} style={{ display: "none" }} />
         </label>
       )}
+      {showCamera && <CameraCapture facingMode="user" onCapture={handleCaptured} onClose={() => setShowCamera(false)} />}
       {err && <div style={{ color: "var(--alert)", fontSize: 11, marginTop: 4 }}>{err}</div>}
     </div>
   );
