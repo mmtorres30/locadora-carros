@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Car, Loader2, UserPlus, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "./AuthContext";
 
 export default function SignupPage({ onGoLogin }) {
   const { signUp } = useAuth();
