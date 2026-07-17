@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { useAuth } from "./AuthContext";
+import { compressImageToBlob, uploadBlob } from "./storageUtils";
+import SignedImage from "./SignedImage";
 import { toTitleCase } from "./formatters";
-import { Car, Plus, Search, Loader2, Trash2, Pencil, ChevronLeft, AlertTriangle } from "lucide-react";
+import { Car, Plus, Search, Loader2, Trash2, Pencil, ChevronLeft, AlertTriangle, Camera, X } from "lucide-react";
 
 const VEHICLE_FIELDS = [
   { key: "placa", label: "Placa", type: "text" },
@@ -10,10 +12,11 @@ const VEHICLE_FIELDS = [
   { key: "modelo", label: "Modelo", type: "text", format: "title" },
   { key: "cor", label: "Cor", type: "text", format: "title" },
   { key: "ano", label: "Ano", type: "text" },
+  { key: "foto", label: "Foto do veículo", type: "photo" },
 ];
 
 function emptyVehicle() {
-  return { id: null, placa: "", marca: "", modelo: "", cor: "", ano: "" };
+  return { id: null, placa: "", marca: "", modelo: "", cor: "", ano: "", foto: "" };
 }
 function normPlaca(v) {
   return (v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -28,6 +31,39 @@ function Field({ f, value, onChange, missingKeys }) {
         type={f.type} className={isErr ? "err" : ""} value={value || ""}
         onChange={(e) => onChange(f.key, f.key === "placa" ? normPlaca(e.target.value) : (f.format === "title" ? toTitleCase(e.target.value) : e.target.value))}
       />
+    </div>
+  );
+}
+
+function PhotoField({ label, value, onChange, locId, folder }) {
+  const [busy, setBusy] = useState(false);
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const blob = await compressImageToBlob(file);
+      const path = await uploadBlob(locId, folder, blob);
+      onChange(path);
+    } catch {}
+    setBusy(false);
+    e.target.value = "";
+  };
+  return (
+    <div className="crs-field">
+      <label>{label} <span style={{ color: "var(--muted)", fontWeight: 400 }}>(opcional)</span></label>
+      {value ? (
+        <div className="crs-thumb-wrap">
+          <SignedImage path={value} className="crs-thumb" alt={label} style={{ maxWidth: 260 }} />
+          <button className="crs-thumb-x" onClick={() => onChange("")}><X size={14} /></button>
+        </div>
+      ) : (
+        <label className="crs-photo-btn">
+          {busy ? <Loader2 size={16} className="spin" /> : <Camera size={16} />}
+          {busy ? "Enviando..." : "Tirar foto / escolher arquivo"}
+          <input type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
+        </label>
+      )}
     </div>
   );
 }
@@ -61,10 +97,10 @@ export default function VehiclesPage() {
   });
 
   function novoVeiculo() { setDraft({ ...emptyVehicle(), id: crypto.randomUUID() }); setMissing([]); setMissingKeys(new Set()); setView("form"); }
-  function editarVeiculo(v) { setDraft({ ...v }); setMissing([]); setMissingKeys(new Set()); setView("form"); }
+  function editarVeiculo(v) { setDraft({ ...emptyVehicle(), ...v, id: v.id }); setMissing([]); setMissingKeys(new Set()); setView("form"); }
 
   async function salvar() {
-    const missingList = VEHICLE_FIELDS.filter((f) => f.key !== "ano" && (!draft[f.key] || String(draft[f.key]).trim() === ""));
+    const missingList = VEHICLE_FIELDS.filter((f) => f.key !== "ano" && f.key !== "foto" && (!draft[f.key] || String(draft[f.key]).trim() === ""));
     if (missingList.length) {
       setMissing(missingList.map((m) => m.label));
       setMissingKeys(new Set(missingList.map((m) => m.key)));
@@ -109,7 +145,11 @@ export default function VehiclesPage() {
         <div className="crs-section">
           <div className="crs-section-head"><Car size={16} /> Dados do veículo</div>
           <div className="crs-section-body">
-            {VEHICLE_FIELDS.map((f) => <Field key={f.key} f={f} value={draft[f.key]} onChange={setField} missingKeys={missingKeys} />)}
+            {VEHICLE_FIELDS.map((f) => f.type === "photo" ? (
+              <PhotoField key={f.key} label={f.label} value={draft.foto} onChange={(v) => setField("foto", v)} locId={draft.id} folder="foto" />
+            ) : (
+              <Field key={f.key} f={f} value={draft[f.key]} onChange={setField} missingKeys={missingKeys} />
+            ))}
           </div>
         </div>
         <button className="crs-btn crs-btn-primary crs-btn-block" disabled={saving} onClick={salvar}>
@@ -137,8 +177,9 @@ export default function VehiclesPage() {
         filtrados.map((v) => (
           <div className="crs-ticket" key={v.id}>
             <div className="crs-ticket-top">
-              <div className="crs-ticket-row">
-                <div>
+              <div className="crs-ticket-row" style={{ alignItems: "center" }}>
+                {v.foto && <SignedImage path={v.foto} alt={v.placa} className="crs-vehicle-thumb" />}
+                <div style={{ flex: 1 }}>
                   <div className="crs-ticket-name crs-mono">{v.placa}</div>
                   <div className="crs-ticket-meta">{v.marca} {v.modelo} {v.cor ? `· ${v.cor}` : ""} {v.ano ? `· ${v.ano}` : ""}</div>
                 </div>

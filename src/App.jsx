@@ -130,6 +130,8 @@ html,body,#root{ height:100%; margin:0; overscroll-behavior:none; }
 .crs-camera-box{ width:100%; max-width:480px; display:flex; flex-direction:column; gap:14px; }
 .crs-camera-video{ width:100%; border-radius:14px; background:#000; max-height:65vh; object-fit:cover; transform:scaleX(-1); }
 .crs-camera-actions{ display:flex; gap:10px; justify-content:center; }
+
+.crs-vehicle-thumb{ width:56px; height:56px; object-fit:cover; border-radius:10px; border:1px solid var(--line); flex-shrink:0; }
 .crs-client-tag{
   display:flex; align-items:center; gap:8px; font-size:12px; color:var(--cyan); background:var(--cyan-soft);
   border:1px solid rgba(47,169,154,.25); border-radius:9px; padding:9px 12px;
